@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Loader2, MessageSquare, Copy, Check, RefreshCw, Lightbulb, HelpCircle } from 'lucide-react';
 
 export default function ChatBox({ onQueryResult }) {
+  const STORAGE_KEY = 'floatchat_messages_v1';
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -20,6 +21,32 @@ export default function ChatBox({ onQueryResult }) {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  // Load persisted messages on mount (client-only)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const saved = window.localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMessages(parsed);
+        }
+      }
+    } catch (e) {
+      // ignore malformed storage
+    }
+  }, []);
+
+  // Persist messages on change (client-only)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    } catch (e) {
+      // ignore quota/serialization errors
+    }
+  }, [messages]);
 
   useEffect(() => {
     scrollToBottom();
