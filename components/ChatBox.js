@@ -5,6 +5,7 @@ import { Send, Bot, User, Loader2, MessageSquare, Copy, Check, RefreshCw, Lightb
 
 export default function ChatBox({ onQueryResult }) {
   const STORAGE_KEY = 'floatchat_messages_v1';
+  const API_BASE = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/+$/,'');
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -134,7 +135,8 @@ export default function ChatBox({ onQueryResult }) {
 
   const suggestAlternatives = async (originalQuery) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/query/suggest`, {
+      if (!API_BASE) throw new Error('API base URL not configured');
+      const response = await fetch(`${API_BASE}/api/query/suggest`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: originalQuery })
@@ -248,6 +250,10 @@ export default function ChatBox({ onQueryResult }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!inputValue.trim() || isLoading) return;
+    if (!API_BASE) {
+      setMessages(prev => [...prev, { id: Date.now() + 99, type: 'bot', content: 'API is not configured. Set NEXT_PUBLIC_API_URL to your backend URL and redeploy.', timestamp: new Date(), error: true }]);
+      return;
+    }
 
     const userMessage = {
       id: Date.now(),
@@ -261,7 +267,7 @@ export default function ChatBox({ onQueryResult }) {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/query`, {
+      const response = await fetch(`${API_BASE}/api/query`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
