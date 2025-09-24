@@ -7,6 +7,7 @@ export default function NetcdfUploader({ onIngest }) {
   const [file, setFile] = useState(null);
   const [status, setStatus] = useState('idle'); // idle | uploading | success | error
   const [message, setMessage] = useState('');
+  const API_BASE = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/+$/, '');
 
   const handleFileChange = (e) => {
     const f = e.target.files?.[0];
@@ -22,7 +23,8 @@ export default function NetcdfUploader({ onIngest }) {
     try {
       const form = new FormData();
       form.append('file', file);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ingest/netcdf`, {
+      if (!API_BASE) throw new Error('API base URL not configured');
+      const res = await fetch(`${API_BASE}/api/ingest/netcdf`, {
         method: 'POST',
         body: form,
       });

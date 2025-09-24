@@ -15,6 +15,7 @@ export default function DashboardPage() {
   const [selectedFloat, setSelectedFloat] = useState(null);
   const [loading, setLoading] = useState(true);
   const [queryResults, setQueryResults] = useState(null);
+  const API_BASE = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/+$/, '');
 
   // Fetch floats data on component mount
   useEffect(() => {
@@ -24,7 +25,8 @@ export default function DashboardPage() {
   const fetchFloats = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/floats`);
+      if (!API_BASE) throw new Error('API base URL not configured');
+      const response = await fetch(`${API_BASE}/api/floats`);
       const data = await response.json();
       
       if (data.success) {
