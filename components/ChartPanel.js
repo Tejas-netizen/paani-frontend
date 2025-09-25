@@ -11,6 +11,15 @@ export default function ChartPanel({ floats, selectedFloat, queryResults }) {
   const [chartData, setChartData] = useState(null);
   const [chartType, setChartType] = useState('temperature');
   const [loading, setLoading] = useState(false);
+  const API_BASE = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/+$/, '');
+
+  // Auto-switch to query_results when new query results arrive
+  useEffect(() => {
+    if (queryResults && queryResults.results && queryResults.results.length > 0) {
+      setChartType('query_results');
+      generateChartData(queryResults, 'query_results');
+    }
+  }, [queryResults]);
 
   useEffect(() => {
     if (selectedFloat) {
@@ -24,7 +33,8 @@ export default function ChartPanel({ floats, selectedFloat, queryResults }) {
   const fetchFloatProfiles = async (floatId) => {
     try {
       setLoading(true);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/profiles/${floatId}`);
+      if (!API_BASE) throw new Error('API base URL not configured');
+      const response = await fetch(`${API_BASE}/api/profiles/${floatId}`);
       const data = await response.json();
       
       if (data.success) {
@@ -113,22 +123,47 @@ export default function ChartPanel({ floats, selectedFloat, queryResults }) {
         break;
 
       case 'distribution':
-        chartConfig = {
-          data: [{
-            x: floats.map(f => f.ocean_region).filter(r => r),
-            type: 'histogram',
-            name: 'Floats by Region',
-            marker: { color: '#8b5cf6' }
-          }],
-          layout: {
-            title: 'Float Distribution by Ocean Region',
-            xaxis: { title: 'Ocean Region' },
-            yaxis: { title: 'Number of Floats' },
-            plot_bgcolor: 'rgba(0,0,0,0)',
-            paper_bgcolor: 'rgba(0,0,0,0)',
-            font: { color: '#374151' }
+        if (floats && floats.length > 0) {
+          const regions = floats.map(f => f.ocean_region).filter(r => r);
+          if (regions.length > 0) {
+            chartConfig = {
+              data: [{
+                x: regions,
+                type: 'histogram',
+                name: 'Floats by Region',
+                marker: { color: '#8b5cf6' }
+              }],
+              layout: {
+                title: 'Float Distribution by Ocean Region',
+                xaxis: { title: 'Ocean Region' },
+                yaxis: { title: 'Number of Floats' },
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: '#374151' }
+              }
+            };
+          } else {
+            chartConfig = {
+              data: [],
+              layout: {
+                title: 'No Ocean Region Data Available',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: '#374151' }
+              }
+            };
           }
-        };
+        } else {
+          chartConfig = {
+            data: [],
+            layout: {
+              title: 'No Float Data Available',
+              plot_bgcolor: 'rgba(0,0,0,0)',
+              paper_bgcolor: 'rgba(0,0,0,0)',
+              font: { color: '#374151' }
+            }
+          };
+        }
         break;
 
       case 'query_results':
@@ -189,12 +224,42 @@ export default function ChartPanel({ floats, selectedFloat, queryResults }) {
 
   const handleChartTypeChange = (type) => {
     setChartType(type);
-    if (selectedFloat && type !== 'query_results' && type !== 'distribution') {
-      fetchFloatProfiles(selectedFloat.float_id);
+    
+    // Clear current chart data first
+    setChartData(null);
+    
+    if (type === 'query_results') {
+      // Show query results if available
+      if (queryResults && queryResults.results && queryResults.results.length > 0) {
+        generateChartData(queryResults, type);
+      } else {
+        setChartData({
+          data: [],
+          layout: {
+            title: 'No Query Results Available',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            font: { color: '#374151' }
+          }
+        });
+      }
     } else if (type === 'distribution') {
+      // Show float distribution
       generateChartData(floats, type);
-    } else if (type === 'query_results') {
-      generateChartData(queryResults, type);
+    } else if (selectedFloat) {
+      // Show profile data for selected float
+      fetchFloatProfiles(selectedFloat.float_id);
+    } else {
+      // No float selected, show empty state
+      setChartData({
+        data: [],
+        layout: {
+          title: `No ${type} data available`,
+          plot_bgcolor: 'rgba(0,0,0,0)',
+          paper_bgcolor: 'rgba(0,0,0,0)',
+          font: { color: '#374151' }
+        }
+      });
     }
   };
 
