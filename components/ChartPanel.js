@@ -300,6 +300,21 @@ export default function ChartPanel({ floats, selectedFloat, queryResults }) {
           })}
         </div>
 
+        {/* Instructions */}
+        {!selectedFloat && (chartType === 'temperature' || chartType === 'salinity' || chartType === 'oxygen') && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+            <div className="flex items-start space-x-2">
+              <div className="text-blue-600 mt-0.5">💡</div>
+              <div className="text-sm text-blue-800">
+                <p className="font-medium">To view {chartType} data:</p>
+                <p>1. Go to the <strong>Map View</strong> tab and click on a float marker</p>
+                <p>2. Or go to the <strong>Float List</strong> tab and click on a float</p>
+                <p>3. Then return here to see the {chartType} profile chart</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Chart Container */}
         <div className="bg-gray-50 rounded-lg p-4 min-h-[400px]">
           {loading ? (
@@ -317,9 +332,22 @@ export default function ChartPanel({ floats, selectedFloat, queryResults }) {
             <div className="flex items-center justify-center h-64 text-gray-500">
               <div className="text-center">
                 <BarChart3 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p>No data available for visualization</p>
-                {!selectedFloat && (
-                  <p className="text-sm mt-2">Select a float to view its profile data</p>
+                {chartType === 'query_results' ? (
+                  <div>
+                    <p>No query results available</p>
+                    <p className="text-sm mt-2">Make a query in the AI Chat to see results here</p>
+                  </div>
+                ) : chartType === 'distribution' ? (
+                  <div>
+                    <p>No float data available</p>
+                    <p className="text-sm mt-2">Refresh the page to load float data</p>
+                  </div>
+                ) : (
+                  <div>
+                    <p>No {chartType} data available</p>
+                    <p className="text-sm mt-2">Select a float from the map or float list to view its {chartType} profile</p>
+                    <p className="text-xs mt-1 text-gray-400">Tip: Click on a float marker on the map or select from the Float List tab</p>
+                  </div>
                 )}
               </div>
             </div>
